@@ -34,3 +34,8 @@ double Filter::Get_filtered_readings()
 	return filtered_readings;
 }
 
+double Filter::aplly_comp_filter(double val1, double val2)
+{
+	filtered_readings = alpha*(filtered_readings + val1) + (1-alpha) * val2;
+	return filtered_readings;
+}

@@ -17,6 +17,7 @@ class Filter
 
 	    double apply_filter(double val);
 
+	    double aplly_comp_filter(double val1, double val2); //http://www.pieter-jan.com/node/11
 
 
 	protected:

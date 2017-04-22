@@ -2,11 +2,17 @@
 #include <GY80.h>
 #include "filter.h"
 
+
+#define ALPHA_ACC_LPF   0.5
+
 GY80 sensor = GY80(); //create GY80 instance
-Filter acc_x_LPF = Filter(0.5);
+
+//acc filters
+Filter acc_x_LPF = Filter(ALPHA_ACC_LPF);
+Filter acc_y_LPF = Filter(ALPHA_ACC_LPF);
+Filter acc_z_LPF = Filter(ALPHA_ACC_LPF);
 
 //acc filter
-const float alpha = 0.5;
 double fXg = 0;
 double fYg = 0;
 double fZg = 0;
@@ -28,8 +34,8 @@ void loop()
 
     //Low Pass Filter to smooth out data
     fXg = acc_x_LPF.apply_filter(val.a_x);
-    fYg = val.a_y * alpha + (fYg * (1.0 - alpha));
-    fZg = val.a_z * alpha + (fZg * (1.0 - alpha));
+    fYg = acc_y_LPF.apply_filter(val.a_y);
+    fZg = acc_z_LPF.apply_filter(val.a_z);
 
 
     // print out values
