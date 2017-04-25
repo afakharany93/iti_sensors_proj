@@ -1,9 +1,10 @@
+#include <math.h>
 #include <Wire.h>
 #include <GY80.h>
 #include "filter.h"
 
 
-#define ALPHA_ACC_LPF   0.5
+#define ALPHA_ACC_LPF   0.9
 
 GY80 sensor = GY80(); //create GY80 instance
 
@@ -13,54 +14,75 @@ Filter acc_y_LPF = Filter(ALPHA_ACC_LPF);
 Filter acc_z_LPF = Filter(ALPHA_ACC_LPF);
 
 //acc filter
-double fXg = 0;
-double fYg = 0;
-double fZg = 0;
+double filtered_acc_x = 0;
+double filtered_acc_y = 0;
+double filtered_acc_z = 0;
 
-
+double pitch=0;
+double roll=0;
 
 void setup()
 {
     // initialize serial communication at 115200 bits per second:
-    Serial.begin(115200);
+    Serial.begin(9600);
     sensor.begin();       //initialize sensors
+    sensor.a_set_scale(GY80_a_scale_4);
 }
 
 
 void loop()
 {
+    
+    //angles calculation from acceleration
+    pitch = (atan2(filtered_acc_x, sqrt(filtered_acc_y*filtered_acc_y + filtered_acc_z*filtered_acc_z))*180.0)/M_PI;
+    roll = (atan2(filtered_acc_y, sqrt(filtered_acc_x*filtered_acc_x + filtered_acc_z*filtered_acc_z))*180.0)/M_PI;
+
     GY80_raw val = sensor.read_raw();       //get values from all sensors
     
 
     //Low Pass Filter to smooth out data
-    fXg = acc_x_LPF.apply_filter(val.a_x);
-    fYg = acc_y_LPF.apply_filter(val.a_y);
-    fZg = acc_z_LPF.apply_filter(val.a_z);
+    filtered_acc_x = acc_x_LPF.apply_filter(val.a_x);
+    filtered_acc_y = acc_y_LPF.apply_filter(val.a_y);
+    filtered_acc_z = acc_z_LPF.apply_filter(val.a_z);
+
+    
+    //roll = (atan2(-filtered_acc_y, filtered_acc_z)*180.0)/M_PI;
 
 
     // print out values
     Serial.print("Acc:");                         //accelerometer values
-    Serial.print(fXg,3);
+    Serial.print(filtered_acc_x,3);
     Serial.print(',');
-    Serial.print(fYg,3);
+    Serial.print(filtered_acc_y,3);
     Serial.print(',');
-    Serial.print(fZg,3);
+    Serial.print(filtered_acc_z,3);
     Serial.print(' ');
-    Serial.print("Gyro:");                        //gyroscope values
-    Serial.print(val.g_x,1);
+
+    Serial.print("  Gyro:");                        //gyroscope values
+    Serial.print(val.g_x);
     Serial.print(',');
-    Serial.print(val.g_y,1);
+    Serial.print(val.g_y);
     Serial.print(',');
-    Serial.print(val.g_z,1);
-    Serial.print(' ');
-    Serial.print("P:");                           //pressure values
-    Serial.print(val.p,5);
-    Serial.print(' ');
-    Serial.print("T:");                           //temperature values
-    Serial.println(val.t,1);
+    Serial.print(val.g_z);
 
 
-    delay(250);        // delay in between reads for stability
+    Serial.print("  angles:");                        //gyroscope values
+    Serial.print("  pitch: ");
+    Serial.print(pitch);
+    Serial.print(',');
+    Serial.print("  Roll: ");
+    Serial.print(roll);
+
+    Serial.print("\n");
+    // Serial.print(' ');
+    // Serial.print("P:");                           //pressure values
+    // Serial.print(val.p,5);
+    // Serial.print(' ');
+    // Serial.print("T:");                           //temperature values
+    // Serial.println(val.t);
+
+
+    delay(200);        // delay in between reads for stability
 }
 
 

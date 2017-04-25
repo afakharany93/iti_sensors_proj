@@ -1,7 +1,25 @@
 #include <Wire.h>
 #include <GY80.h>
+#include <Servo.h>
+#include "fuzzy.h"
+
+
+Servo Pitch_servo;  // create servo object to control a servo
+Servo Roll_servo;  // create servo object to control a servo
 
 GY80 sensor = GY80(); //create GY80 instance
+
+
+/*
+creating an instance of the fuzzy controller.
+the constructor takes in first argument is the number of fuzzy sets of the both error and change in error,
+the second argument is the max of the input range,
+third argument is the minimum of the input range,
+forth argument is the maximum of the output range,
+fifth argument is the minimum of the output range
+*/
+fuzzy Pitch_cntrlr(9,180,-180,180,0);
+fuzzy Roll_cntrlr(9,180,-180,180,0);   
 
 double tau=0.075;
 double a=0.0;
@@ -11,6 +29,12 @@ double pitch=0;
 double roll=0;
 double looptime=millis();
 double looptime_new=0;
+
+int ch_op_pitch_servo = 0;
+int pitch_servo_val= 0;
+
+int ch_op_roll_servo = 0;
+int roll_servo_val= 0;
 
 void Complementary_Pitch(double newAngle, double newRate,int looptime) 
 {
@@ -35,6 +59,9 @@ void setup()
     Serial.begin(9600);
     sensor.begin();    //initialize sensors
     //sensor.g_set_scale(GY80_g_scale_250);
+
+    Pitch_servo.attach(9);  // attaches the servo on pin 9 to the servo object
+    Roll_servo.attach(10);
 }
 
 void loop()
@@ -49,7 +76,34 @@ void loop()
      
      Complementary_Pitch(pitch,val.g_y,looptime_new);       //accelerometer values
      Complementary_roll(roll,val.g_x,looptime_new);
+
+     //control
+     ch_op_pitch_servo = Pitch_cntrlr.fuzzy_controller(pitch , 0); //arguments to the fuzzy controller (input, setpoint)
+     pitch_servo_val += ch_op_pitch_servo;
+     if(pitch_servo_val > 180)
+     {
+        pitch_servo_val = 180;
+     }
+     else if(pitch_servo_val < 0)
+     {
+        pitch_servo_val = 0;
+     }
+
+     ch_op_roll_servo = Roll_cntrlr.fuzzy_controller(roll , 0); //arguments to the fuzzy controller (input, setpoint)
+     roll_servo_val += ch_op_roll_servo;
+     if(roll_servo_val > 180)
+     {
+        roll_servo_val = 180;
+     }
+     else if(roll_servo_val < 0)
+     {
+        roll_servo_val = 0;
+     }
      
+     Pitch_servo.write(pitch_servo_val);
+     Roll_servo.write(roll_servo_val);
+
+
      Serial.print(",acc x =");
      Serial.print(val.a_x); 
      Serial.print(",acc y =");
